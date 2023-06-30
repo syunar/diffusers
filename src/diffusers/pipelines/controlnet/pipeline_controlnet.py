@@ -595,16 +595,16 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline, TextualInversionLoade
         else:
             assert False
 
-        if len(control_guidance_start) != len(control_guidance_end):
-            raise ValueError(
-                f"`control_guidance_start` has {len(control_guidance_start)} elements, but `control_guidance_end` has {len(control_guidance_end)} elements. Make sure to provide the same number of elements to each list."
-            )
+        # if len(control_guidance_start) != len(control_guidance_end):
+        #     raise ValueError(
+        #         f"`control_guidance_start` has {len(control_guidance_start)} elements, but `control_guidance_end` has {len(control_guidance_end)} elements. Make sure to provide the same number of elements to each list."
+        #     )
 
-        if isinstance(self.controlnet, MultiControlNetModel):
-            if len(control_guidance_start) != len(self.controlnet.nets):
-                raise ValueError(
-                    f"`control_guidance_start`: {control_guidance_start} has {len(control_guidance_start)} elements but there are {len(self.controlnet.nets)} controlnets available. Make sure to provide {len(self.controlnet.nets)}."
-                )
+        # if isinstance(self.controlnet, MultiControlNetModel):
+        #     if len(control_guidance_start) != len(self.controlnet.nets):
+        #         raise ValueError(
+        #             f"`control_guidance_start`: {control_guidance_start} has {len(control_guidance_start)} elements but there are {len(self.controlnet.nets)} controlnets available. Make sure to provide {len(self.controlnet.nets)}."
+        #         )
 
         for start, end in zip(control_guidance_start, control_guidance_end):
             if start >= end:
