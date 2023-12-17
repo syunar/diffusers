@@ -30,7 +30,7 @@ import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from huggingface_hub import create_repo, upload_folder
 from packaging import version
 from PIL import Image
@@ -593,23 +593,20 @@ def make_train_dataset(args, tokenizer, accelerator):
     # download the dataset.
     if args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
-        dataset = load_dataset(
+        dataset = load_from_disk(
             args.dataset_name,
-            args.dataset_config_name,
-            cache_dir=args.cache_dir,
         )
     else:
         if args.train_data_dir is not None:
-            dataset = load_dataset(
+            dataset = load_from_disk(
                 args.train_data_dir,
-                cache_dir=args.cache_dir,
             )
         # See more about loading custom images at
         # https://huggingface.co/docs/datasets/v2.0.0/en/dataset_script
 
     # Preprocessing the datasets.
     # We need to tokenize inputs and targets.
-    column_names = dataset["train"].column_names
+    column_names = dataset.column_names
 
     # 6. Get the column names for input/target.
     if args.image_column is None:
@@ -646,7 +643,10 @@ def make_train_dataset(args, tokenizer, accelerator):
         captions = []
         for caption in examples[caption_column]:
             if random.random() < args.proportion_empty_prompts:
-                captions.append("")
+                if "greyscale" in caption.lower() or "monochrome" in caption.lower():
+                    captions.append(caption)
+                else:
+                    captions.append("")
             elif isinstance(caption, str):
                 captions.append(caption)
             elif isinstance(caption, (list, np.ndarray)):
@@ -693,9 +693,9 @@ def make_train_dataset(args, tokenizer, accelerator):
 
     with accelerator.main_process_first():
         if args.max_train_samples is not None:
-            dataset["train"] = dataset["train"].shuffle(seed=args.seed).select(range(args.max_train_samples))
+            dataset = dataset.shuffle(seed=args.seed).select(range(args.max_train_samples))
         # Set the training transforms
-        train_dataset = dataset["train"].with_transform(preprocess_train)
+        train_dataset = dataset.with_transform(preprocess_train)
 
     return train_dataset
 
@@ -782,7 +782,7 @@ def main(args):
     #     args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision, variant=args.variant
     # )
     vae = AutoencoderKL.from_pretrained(
-        "stabilityai/sd-vae-ft-mse", torch_dtype=torch.float16, subfolder="vae", revision=args.revision, variant=args.variant
+        "stabilityai/sd-vae-ft-mse", torch_dtype=torch.float16, revision=args.revision, variant=args.variant
     )
     # vae = AutoencoderKL.from_pretrained(
     #     args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, variant=args.variant
