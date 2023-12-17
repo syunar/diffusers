@@ -34,9 +34,11 @@ from datasets import load_dataset
 from huggingface_hub import create_repo, upload_folder
 from packaging import version
 from PIL import Image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision import transforms
 from tqdm.auto import tqdm
-from transformers import AutoTokenizer, PretrainedConfig
+from transformers import AutoTokenizer, PretrainedConfig, CLIPTextModel
 
 import diffusers
 from diffusers import (
@@ -661,7 +663,7 @@ def make_train_dataset(args, tokenizer, accelerator):
 
     image_transforms = transforms.Compose(
         [
-            transforms.Resize(args.resolution, interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.Resize((args.resolution, args.resolution), interpolation=transforms.InterpolationMode.BILINEAR),
             transforms.CenterCrop(args.resolution),
             transforms.ToTensor(),
             transforms.Normalize([0.5], [0.5]),
@@ -670,7 +672,7 @@ def make_train_dataset(args, tokenizer, accelerator):
 
     conditioning_image_transforms = transforms.Compose(
         [
-            transforms.Resize(args.resolution, interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.Resize((args.resolution, args.resolution), interpolation=transforms.InterpolationMode.BILINEAR),
             transforms.CenterCrop(args.resolution),
             transforms.ToTensor(),
         ]
@@ -680,7 +682,7 @@ def make_train_dataset(args, tokenizer, accelerator):
         images = [image.convert("RGB") for image in examples[image_column]]
         images = [image_transforms(image) for image in images]
 
-        conditioning_images = [image.convert("RGB") for image in examples[conditioning_image_column]]
+        conditioning_images = [image.convert("L").convert("RGB") for image in examples[conditioning_image_column]]
         conditioning_images = [conditioning_image_transforms(image) for image in conditioning_images]
 
         examples["pixel_values"] = images
@@ -770,12 +772,21 @@ def main(args):
 
     # Load scheduler and models
     noise_scheduler = DDPMScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
-    text_encoder = text_encoder_cls.from_pretrained(
-        args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision, variant=args.variant
-    )
+    text_encoder = CLIPTextModel.from_pretrained(
+            args.pretrained_model_name_or_path,
+            subfolder="text_encoder",
+            torch_dtype=torch.float16,
+            num_hidden_layers=12 - 1,
+        )
+    # text_encoder = text_encoder_cls.from_pretrained(
+    #     args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision, variant=args.variant
+    # )
     vae = AutoencoderKL.from_pretrained(
-        args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, variant=args.variant
+        "stabilityai/sd-vae-ft-mse", torch_dtype=torch.float16, subfolder="vae", revision=args.revision, variant=args.variant
     )
+    # vae = AutoencoderKL.from_pretrained(
+    #     args.pretrained_model_name_or_path, subfolder="vae", revision=args.revision, variant=args.variant
+    # )
     unet = UNet2DConditionModel.from_pretrained(
         args.pretrained_model_name_or_path, subfolder="unet", revision=args.revision, variant=args.variant
     )

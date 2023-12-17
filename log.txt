@@ -1,0 +1,21 @@
+2023-12-12
+model_out_v1: 
+- ลองครั้งแรก 
+- data250k 
+- แบบ pretrained greyscale 
+- ยังไม่ได้แก้ code preprocess ตอน validation ทำให้ ผล log validation ใน wandb ไม่เห็นสี
+
+2023-12-13
+model_out_v2: 
+- แก้ preprocess ตอน validation 
+- ลอง ไม่ใช้ pretrained greyscale (init from SD1.5) 
+    - hypothesis คือ ใช้ pretrained greyscale ที่เค้า train มาทำให้อยู่ในหลุม local
+
+2023-12-17
+nmode_out_v3:
+- new datasets 550K+
+- no pretrained controlnet
+- SD use pretrained anythingv3 (clipskip=2)
+- resize to 768 without padding
+- proportion_empty_prompts=0.5
+- data have preprocess by remove all aspect ratio > 1.7 and min resolution = 600
