@@ -192,10 +192,9 @@ class DeepDanbooruModel(nn.Module):
         self.n_Conv_177 = nn.Conv2d(kernel_size=(1, 1), in_channels=1024, out_channels=4096)
         self.n_Conv_178 = nn.Conv2d(kernel_size=(1, 1), in_channels=4096, out_channels=9176, bias=False)
 
-    def forward(self, *inputs):
-        (t_358,) = inputs
-        t_359 = t_358.permute(*[0, 3, 1, 2])
-        t_359_padded = F.pad(t_359, [2, 3, 2, 3], value=0)
+    def forward(self, x):
+
+        t_359_padded = F.pad(x, [2, 3, 2, 3], value=0)
         t_360 = self.n_Conv_0(t_359_padded.to(self.n_Conv_0.bias.dtype))
         t_361 = F.relu(t_360)
         t_361 = F.pad(t_361, [0, 1, 0, 1], value=float("-inf"))
