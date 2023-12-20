@@ -37,6 +37,7 @@ from PIL import Image
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from torchvision import transforms
+from torchvision.transforms import ToPILImage
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, PretrainedConfig, CLIPTextModel
 
@@ -118,9 +119,19 @@ def log_validation(vae, text_encoder, tokenizer, unet, controlnet, args, acceler
         )
 
     image_logs = []
+    
+    conditioning_image_transforms = transforms.Compose(
+        [
+            transforms.Resize((args.resolution, args.resolution), interpolation=transforms.InterpolationMode.BILINEAR),
+            transforms.CenterCrop(args.resolution),
+            transforms.ToTensor(),
+        ]
+    )
 
     for validation_prompt, validation_image in zip(validation_prompts, validation_images):
-        validation_image = Image.open(validation_image).convert("RGB")
+        validation_image = Image.open(validation_image).convert("L").convert("RGB")
+        validation_image_pt = conditioning_image_transforms(validation_image)
+        validation_image = ToPILImage()(validation_image_pt)
 
         images = []
 
@@ -1097,7 +1108,7 @@ def main(args):
                         accelerator.save_state(save_path)
                         logger.info(f"Saved state to {save_path}")
 
-                    if args.validation_prompt is not None and global_step % args.validation_steps == 0:
+                    if global_step == 1 or (args.validation_prompt is not None and global_step % args.validation_steps == 0):
                         image_logs = log_validation(
                             vae,
                             text_encoder,

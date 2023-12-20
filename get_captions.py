@@ -79,7 +79,10 @@ import gc
 torch.cuda.empty_cache()
 gc.collect()
 
-df.to_csv("validation_images/captions.csv", index=False)
+# df.to_csv("validation_images/captions.csv", index=False)
 
-'" "'.join(df.iloc[:5]["filename"].to_list())
-'" "'.join(df.iloc[:5]["captions"].to_list())
+import pandas as pd
+df = pd.read_csv("validation_images/captions.csv")
+
+'" "'.join(df.iloc[:10]["filename"].to_list())
+'" "'.join(df.iloc[:10]["captions"].to_list())
